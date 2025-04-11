@@ -1,72 +1,48 @@
-@echo off
-setlocal
+#!/bin/bash
 
-set "nodejs_path="
+# Função para verificar a existência de um comando
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-echo Tentando encontrar o Node.js
-timeout /nobreak /t 1 >nul
+echo "Tentando encontrar o Node.js"
+sleep 1
 
-:loading
-echo.
-echo Loading.
-timeout /nobreak /t 1 >nul
-cls
+loading_animation() {
+    for i in {1..3}; do
+        echo -n "Loading"
+        for j in $(seq 1 $i); do
+            echo -n "."
+        done
+        echo
+        sleep 1
+        clear
+    done
+}
 
-echo.
-echo Loading..
-timeout /nobreak /t 1 >nul
-cls
+loading_animation
 
-echo.
-echo Loading...
-timeout /nobreak /t 1 >nul
-cls
+# Verifica se o Node.js está instalado
+if ! command_exists node; then
+    echo "Node.js não encontrado. Por favor, instale manualmente: https://nodejs.org/en"
+    exit 1
+fi
 
-for /f "tokens=*" %%i in ('where node') do (
-    set "nodejs_path=%%i"
-)
-
-if not defined nodejs_path (
-    echo Node.js não encontrado, terá uma tentativa de instalação usando scoop, provavelmente irá falhar
-    where scoop >nul 2>nul
-    if %errorlevel% neq 0 (
-        echo Instalando Scoop...
-        echo Quando o scoop for instalado feche e abra o terminal
-        Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-        echo.
-        pause
-        exit /b 1
-    )
-
-    echo Instalando Node.js usando Scoop...
-    call scoop install nodejs
-
-    where node >nul 2>nul
-    if %errorlevel% neq 0 (
-        echo Não foi possível instalar nodejs, instale manualmente: https://nodejs.org/en
-        pause
-        exit /b 1
-    )
-
-    for /f "tokens=*" %%i in ('where node') do (
-        set "nodejs_path=%%i"
-    )
-)
-
-echo Node.js encontrado em: %nodejs_path%
+NODE_PATH=$(which node)
+echo "Node.js encontrado em: $NODE_PATH"
 node --version
 
-if not exist "node_modules" (
-    echo Instalando...
-    call npm i
-)
+# Instala dependências se a pasta node_modules não existir
+if [ ! -d "node_modules" ]; then
+    echo "Instalando dependências do npm..."
+    npm install
+fi
 
-where tsx >nul 2>nul
-if %errorlevel% neq 0 (
-    echo instalando tsx..
-    call npm i -g tsx
-)
+# Verifica se o tsx está instalado globalmente
+if ! command_exists tsx; then
+    echo "Instalando tsx..."
+    npm install -g tsx
+fi
 
+# Executa o aplicativo
 tsx .
-
-endlocal
